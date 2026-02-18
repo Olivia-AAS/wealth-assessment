@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>财富潜力测评</title>
+    <!-- Chart.js for the Radar Chart -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-gold: #FFD700;
+            --secondary-gold: #FDB931;
+            --deep-purple: #2E0E48;
+            --light-purple: #5D3E8C;
+            --text-dark: #333333;
+            --text-light: #FFFFFF;
+            --glass-bg: rgba(255, 255, 255, 0.95);
+            --glass-border: rgba(255, 255, 255, 0.3);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'PingFang SC', 'Helvetica Neue', 'Arial', sans-serif;
+            background: linear-gradient(135deg, var(--deep-purple) 0%, #4B2468 50%, var(--secondary-gold) 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            color: var(--text-dark);
+            overflow-x: hidden;
+        }
+
+        /* Mobile Container Simulation */
+        #app-container {
+            width: 100%;
+            max-width: 480px;
+            min-height: 100vh;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            position: relative;
+            overflow-y: auto;
+            box-shadow: 0 0 40px rgba(0,0,0,0.3);
+        }
+
+        /* Section Visibility Handling */
+        .page-section {
+            display: none;
+            padding: 24px;
+            animation: fadeIn 0.5s ease-out;
+            min-height: 100vh;
+            flex-direction: column;
+        }
+
+        .page-section.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* --- Welcome Page --- */
+        .welcome-content {
+            text-align: center;
+            margin-top: auto;
+            margin-bottom: auto;
+            color: var(--text-light);
+        }
+
+        .main-title {
+            font-size: 2.4rem;
+            font-weight: 800;
+            margin-bottom: 10px;
+            background: linear-gradient(to right, #fff, #FFD700);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+
+        .sub-title {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            margin-bottom: 40px;
+            letter-spacing: 1px;
+        }
+
+        .intro-card {
+            background: var(--glass-bg);
+            border-radius: 20px;
+            padding: 30px;
+            color: var(--text-dark);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 40px;
+        }
+
+        .intro-text {
+            font-size: 1rem;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .highlight {
+            color: #8E44AD;
+            font-weight: bold;
+        }
+
+        /* Buttons */
+        .btn-primary {
+            background: linear-gradient(90deg, #FDB931 0%, #FFD700 100%);
+            border: none;
+            padding: 16px 40px;
+            border-radius: 50px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--deep-purple);
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(253, 185, 49, 0.4);
+            transition: transform 0.2s, box-shadow 0.2s;
+            width: 100%;
+        }
+
+        .btn-primary:active {
+            transform: scale(0.98);
+            box-shadow: 0 2px 10px rgba(253, 185, 49, 0.3);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            border: 2px solid var(--primary-gold);
+            padding: 12px 30px;
+            border-radius: 50px;
+            font-size: 1rem;
+            font-weight: bold;
+            color: var(--text-dark);
+            cursor: pointer;
+            margin-top: 10px;
+            width: 100%;
+        }
+
+        /* --- Quiz Page --- */
+        .quiz-header {
+            margin-bottom: 30px;
+        }
+
+        .progress-container {
+            width: 100%;
+            height: 8px;
+            background: rgba(255,255,255,0.3);
+            border-radius: 4px;
+            margin-bottom: 15px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: var(--primary-gold);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .step-counter {
+            color: var(--text-light);
+            font-size: 0.9rem;
+            text-align: right;
+        }
+
+        .question-card {
+            background: var(--glass-bg);
+            border-radius: 20px;
+            padding: 30px 24px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            margin-bottom: 20px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .question-badge {
+            display: inline-block;
+            background: var(--light-purple);
+            color: #fff;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            margin-bottom: 16px;
+            align-self: flex-start;
+        }
+
+        .question-text {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 30px;
+            line-height: 1.5;
+            color: var(--text-dark);
+        }
+
+        .options-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .option-btn {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            padding: 16px 20px;
+            border-radius: 12px;
+            text-align: left;
+            font-size: 1rem;
+            color: var(--text-dark);
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .option-btn:hover {
+            border-color: var(--secondary-gold);
+            background: #fffbf0;
+        }
+
+        .option-btn:active {
+            background: var(--primary-gold);
+            border-color: var(--primary-gold);
+            color: var(--deep-purple);
+            font-weight: 600;
+        }
+
+        /* --- Result Page --- */
+        .result-container {
+            background: #fff;
+            border-radius: 20px 20px 0 0;
+            min-height: 90vh;
+            margin: 20px -24px -24px -24px;
+            padding: 30px 24px;
+            position: relative;
+            box-shadow: 0 -10px 30px rgba(0,0,0,0.2);
+        }
+
+        .score-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .total-score {
+            font-size: 3.5rem;
+            font-weight: 800;
+            color: var(--light-purple);
+            line-height: 1;
+        }
+
+        .score-label {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .star-rating {
+            font-size: 1.5rem;
+            color: var(--primary-gold);
+            margin: 10px 0;
+            letter-spacing: 5px;
+        }
+
+        .level-badge {
+            background: var(--deep-purple);
+            color: var(--primary-gold);
+            padding: 6px 20px;
+            border-radius: 20px;
+            font-weight: bold;
+            display: inline-block;
+            margin-bottom: 20px;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 250px;
+            width: 100%;
+            margin-bottom: 30px;
+        }
+
+        .analysis-box {
+            background: #f8f9fa;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-left: 5px solid var(--light-purple);
+        }
+
+        .analysis-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: var(--deep-purple);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .analysis-text {
+            font-size: 0.95rem;
+            color: #555;
+            line-height: 1.6;
+        }
+
+        /* Personal Brand Section Styles */
+        .personal-brand-card {
+            background: #ffffff;
+            border-radius: 24px;
+            padding: 30px 20px;
+            margin-bottom: 30px;
+            text-align: center;
+            position: relative;
+            box-shadow: 0 10px 40px rgba(46, 14, 72, 0.08);
+            border: 1px solid rgba(253, 185, 49, 0.2);
+            overflow: hidden;
+        }
+
+        .personal-brand-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 6px;
+            background: linear-gradient(90deg, var(--secondary-gold), var(--primary-gold), var(--secondary-gold));
+        }
+
+        .brand-header {
+            margin-bottom: 20px;
+        }
+
+        .brand-title {
+            font-size: 1.3rem;
+            color: var(--deep-purple);
+            font-weight: 800;
+            margin-bottom: 8px;
+        }
+
+        .brand-subtitle {
+            font-size: 1rem;
+            color: #555;
+            line-height: 1.5;
+        }
+
+        .brand-name-highlight {
+            color: var(--light-purple);
+            font-weight: 800;
+            font-size: 1.1rem;
+        }
+
+        .brand-tag {
+            display: inline-block;
+            background: rgba(253, 185, 49, 0.15);
+            color: #8E44AD;
+            padding: 4px 12px;
+            border-radius: 50px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-bottom: 25px;
+        }
+
+        .qr-wrapper {
+            position: relative;
+            width: 200px;
+            height: 200px;
+            margin: 0 auto 25px auto;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .qr-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 12px;
+            border: 2px solid rgba(253, 185, 49, 0.3);
+            box-shadow: 0 0 25px rgba(253, 185, 49, 0.25);
+            z-index: 2;
+            background: #fff;
+        }
+
+        .qr-glow-effect {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 220px;
+            height: 220px;
+            background: radial-gradient(circle, rgba(253, 185, 49, 0.15) 0%, transparent 70%);
+            z-index: 1;
+            animation: glowPulse 3s infinite;
+        }
+
+        @keyframes glowPulse {
+            0% { opacity: 0.6; transform: translate(-50%, -50%) scale(0.95); }
+            50% { opacity: 1; transform: translate(-50%, -50%) scale(1.05); }
+            100% { opacity: 0.6; transform: translate(-50%, -50%) scale(0.95); }
+        }
+
+        .guide-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .guide-item {
+            background: #fcfcfc;
+            border: 1px solid #f0f0f0;
+            padding: 12px 16px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-align: left;
+            transition: transform 0.2s;
+        }
+
+        .guide-item:active {
+            transform: scale(0.98);
+            background: #fffbf0;
+        }
+
+        .guide-icon {
+            width: 24px;
+            height: 24px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        .guide-text {
+            font-size: 0.9rem;
+            color: #444;
+            line-height: 1.4;
+        }
+
+        .guide-text strong {
+            color: var(--deep-purple);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        /* Confetti Animation */
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background-color: #ffd700;
+            animation: fall linear forwards;
+            top: -20px;
+            z-index: 999;
+        }
+
+        @keyframes fall {
+            to { transform: translateY(100vh) rotate(720deg); }
+        }
+
+        /* Loading Spinner */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--deep-purple);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 1000;
+            color: white;
+        }
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(255,255,255,0.3);
+            border-top: 5px solid var(--primary-gold);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    </style>
+</head>
+<body>
+
+    <div id="app-container">
+        
+        <!-- Welcome Page -->
+        <section id="welcome-page" class="page-section active">
+            <div class="welcome-content">
+                <h1 class="main-title">财富潜力测评</h1>
+                <p class="sub-title">Exploring Wealth Energy</p>
+                
+                <div class="intro-card">
+                    <p class="intro-text">
+                        你是否觉得自己很努力，但财富总是留不住？<br>
+                        或者你渴望突破现在的收入瓶颈，却找不到方向？<br><br>
+                        本测评基于<span class="highlight">金钱心理学</span>与<span class="highlight">显化法则</span>，通过12道深层潜意识问答，揭示你当前的财富能量层级。
+                    </p>
+                    <ul style="text-align: left; padding-left: 20px; margin-bottom: 20px; color: #555; font-size: 0.9rem;">
+                        <li>🔍 诊断4大财富维度</li>
+                        <li>📊 生成专属雷达图</li>
+                        <li>💡 获取定制化建议</li>
+                    </ul>
+                </div>
+
+                <button class="btn-primary" onclick="startQuiz()">开始测评</button>
+                <p style="margin-top: 15px; font-size: 0.8rem; opacity: 0.7;">已有 10w+ 人参与测评</p>
+            </div>
+        </section>
+
+        <!-- Quiz Page -->
+        <section id="quiz-page" class="page-section">
+            <div class="quiz-header">
+                <div class="progress-container">
+                    <div id="progress-bar" class="progress-bar"></div>
+                </div>
+                <div class="step-counter">
+                    <span id="current-question-num">1</span> / 12
+                </div>
+            </div>
+
+            <div class="question-card">
+                <span id="dimension-badge" class="question-badge">金钱信念</span>
+                <h2 id="question-text" class="question-text">题目加载中...</h2>
+                
+                <div id="options-container" class="options-list">
+                    <!-- Options injected via JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Loading Screen -->
+        <div id="loading-screen" class="loading-overlay">
+            <div class="spinner"></div>
+            <p>正在分析您的财富能量...</p>
+        </div>
+
+        <!-- Result Page -->
+        <section id="result-page" class="page-section" style="padding-top: 0;">
+            <div class="result-container" id="result-content">
+                <div class="score-header">
+                    <div class="score-label">您的财富潜力指数</div>
+                    <div class="total-score" id="total-score">0</div>
+                    <div class="star-rating" id="star-rating">⭐⭐⭐</div>
+                    <div class="level-badge" id="level-title">待激活</div>
+                </div>
+
+                <div class="chart-container">
+                    <canvas id="radarChart"></canvas>
+                </div>
+
+                <div class="analysis-box">
+                    <div class="analysis-title">📊 维度深度解析</div>
+                    <p class="analysis-text" id="dimension-analysis">分析生成中...</p>
+                </div>
+
+                <div class="analysis-box" style="border-left-color: var(--primary-gold); background: #fffbf0;">
+                    <div class="analysis-title">💡 专属建议</div>
+                    <p class="analysis-text" id="advice-text">建议生成中...</p>
+                </div>
+
+                <!-- Personal Brand Section (Replaced original CTA box) -->
+                <div class="personal-brand-card">
+                    <div class="brand-header">
+                        <h3 class="brand-title">想要激活你的财富潜力？</h3>
+                        <p class="brand-subtitle">跟随 <span class="brand-name-highlight">奥莉Olivia</span>，开启财富显化之旅</p>
+                    </div>
+
+                    <div class="brand-tag">显化财富教练 | 帮助你激活财富潜力</div>
+
+                    <div class="qr-wrapper">
+                        <div class="qr-glow-effect"></div>
+                        <img src="https://cdn.gooo.ai/user-files/647c26988511bfc3494a5bb2a8994c14ce3f79195633a6fb97dba4bd259b3b81@chat" alt="奥莉Olivia二维码" class="qr-img">
+                    </div>
+
+                    <div class="guide-list">
+                        <div class="guide-item">
+                            <span class="guide-icon">🟢</span>
+                            <span class="guide-text">扫码加微信，免费领取《财富显化工具包》</span>
+                        </div>
+                        <div class="guide-item">
+                            <span class="guide-icon">📕</span>
+                            <span class="guide-text">在小红书搜索【<strong>奥莉Olivia</strong>】了解更多显化方法</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="btn-primary" onclick="alert('请截图保存此页面分享！')">保存结果</button>
+                    <button class="btn-secondary" onclick="restartQuiz()">重新测评</button>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <script>
+        // --- Data ---
+        const questions = [
+            // Dimension 1: 金钱信念 (Belief)
+            {
+                id: 1,
+                dim: 'belief',
+                text: "当你想到'赚大钱'时，你的第一反应是？",
+                options: [
+                    { text: "兴奋期待，我值得拥有财富", score: 10 },
+                    { text: "有点不安，担心自己做不到", score: 5 },
+                    { text: "觉得不现实，富人都是有背景的", score: 0 }
+                ]
+            },
+            {
+                id: 2,
+                dim: 'belief',
+                text: "你如何看待金钱？",
+                options: [
+                    { text: "金钱是能量流动，我可以创造财富", score: 10 },
+                    { text: "金钱很重要但很难赚", score: 5 },
+                    { text: "谈钱很俗气，我不太在意", score: 0 }
+                ]
+            },
+            {
+                id: 3,
+                dim: 'belief',
+                text: "当别人比你富有时，你的感受是？",
+                options: [
+                    { text: "受到激励，他们能做到我也可以", score: 10 },
+                    { text: "有点羡慕，但觉得自己条件不如他们", score: 5 },
+                    { text: "觉得不公平或嫉妒", score: 0 }
+                ]
+            },
+            // Dimension 2: 行动执行力 (Action)
+            {
+                id: 4,
+                dim: 'action',
+                text: "你有赚钱想法时，通常会？",
+                options: [
+                    { text: "立即制定计划并开始行动", score: 10 },
+                    { text: "想很久，偶尔尝试一下", score: 5 },
+                    { text: "想想而已，很少真正去做", score: 0 }
+                ]
+            },
+            {
+                id: 5,
+                dim: 'action',
+                text: "面对赚钱机会时，你的反应是？",
+                options: [
+                    { text: "快速评估风险后果断行动", score: 10 },
+                    { text: "反复犹豫，担心失败", score: 5 },
+                    { text: "找各种理由说服自己不适合", score: 0 }
+                ]
+            },
+            {
+                id: 6,
+                dim: 'action',
+                text: "你的时间管理能力如何？",
+                options: [
+                    { text: "有明确目标和计划，执行力强", score: 10 },
+                    { text: "有计划但经常拖延", score: 5 },
+                    { text: "比较随性，走一步看一步", score: 0 }
+                ]
+            },
+            // Dimension 3: 显化认知 (Manifestation)
+            {
+                id: 7,
+                dim: 'manifestation',
+                text: "你相信'心想事成'吗？",
+                options: [
+                    { text: "相信，并且知道如何科学显化", score: 10 },
+                    { text: "半信半疑，试过但效果不明显", score: 5 },
+                    { text: "不太相信，觉得是心理安慰", score: 0 }
+                ]
+            },
+            {
+                id: 8,
+                dim: 'manifestation',
+                text: "你如何看待'显化财富'？",
+                options: [
+                    { text: "显化+行动=结果，我愿意学习方法", score: 10 },
+                    { text: "听说过但不知道具体怎么做", score: 5 },
+                    { text: "没听过或觉得是玄学", score: 0 }
+                ]
+            },
+            {
+                id: 9,
+                dim: 'manifestation',
+                text: "你有明确的财富目标吗？",
+                options: [
+                    { text: "有具体数字和实现时间表", score: 10 },
+                    { text: "有大概想法但不够清晰", score: 5 },
+                    { text: "没想过或觉得想了也没用", score: 0 }
+                ]
+            },
+            // Dimension 4: 资源整合 (Resources)
+            {
+                id: 10,
+                dim: 'resources',
+                text: "遇到问题时，你会？",
+                options: [
+                    { text: "主动寻求帮助和资源", score: 10 },
+                    { text: "自己摸索，不太愿意麻烦别人", score: 5 },
+                    { text: "容易放弃或抱怨", score: 0 }
+                ]
+            },
+            {
+                id: 11,
+                dim: 'resources',
+                text: "你的人际网络如何？",
+                options: [
+                    { text: "认识各领域的人，善于合作", score: 10 },
+                    { text: "朋友不多但关系不错", score: 5 },
+                    { text: "比较封闭，不太社交", score: 0 }
+                ]
+            },
+            {
+                id: 12,
+                dim: 'resources',
+                text: "你如何看待学习投资？",
+                options: [
+                    { text: "愿意为成长付费，投资自己", score: 10 },
+                    { text: "会学习但更喜欢免费资源", score: 5 },
+                    { text: "觉得没必要或舍不得花钱", score: 0 }
+                ]
+            }
+        ];
+
+        const dimensionMap = {
+            'belief': '金钱信念',
+            'action': '行动执行力',
+            'manifestation': '显化认知',
+            'resources': '资源整合'
+        };
+
+        // --- State ---
+        let currentQuestionIndex = 0;
+        let answers = [];
+        let chartInstance = null;
+
+        // --- Logic ---
+
+        function startQuiz() {
+            showSection('quiz-page');
+            renderQuestion();
+        }
+
+        function showSection(id) {
+            document.querySelectorAll('.page-section').forEach(el => el.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            window.scrollTo(0, 0);
+        }
+
+        function renderQuestion() {
+            const q = questions[currentQuestionIndex];
+            
+            // Update UI
+            document.getElementById('current-question-num').innerText = currentQuestionIndex + 1;
+            const progressPercent = ((currentQuestionIndex + 1) / questions.length) * 100;
+            document.getElementById('progress-bar').style.width = `${progressPercent}%`;
+            
+            document.getElementById('dimension-badge').innerText = dimensionMap[q.dim];
+            document.getElementById('question-text').innerText = q.text;
+
+            const optionsContainer = document.getElementById('options-container');
+            optionsContainer.innerHTML = '';
+
+            q.options.forEach((opt, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.innerText = opt.text;
+                btn.onclick = () => selectOption(opt.score);
+                // Slight delay for animation effect
+                btn.style.animation = `fadeIn 0.3s ease-out ${index * 0.1}s backwards`;
+                optionsContainer.appendChild(btn);
+            });
+        }
+
+        function selectOption(score) {
+            answers.push({ ...questions[currentQuestionIndex], score: score });
+            
+            if (currentQuestionIndex < questions.length - 1) {
+                currentQuestionIndex++;
+                renderQuestion();
+            } else {
+                finishQuiz();
+            }
+        }
+
+        function finishQuiz() {
+            document.getElementById('quiz-page').classList.remove('active');
+            document.getElementById('loading-screen').style.display = 'flex';
+
+            // Simulate calculation time
+            setTimeout(() => {
+                document.getElementById('loading-screen').style.display = 'none';
+                calculateAndShowResults();
+            }, 1500);
+        }
+
+        function calculateAndShowResults() {
+            showSection('result-page');
+
+            // 1. Calculate Scores
+            let totalScore = 0;
+            let dimScores = {
+                'belief': 0,
+                'action': 0,
+                'manifestation': 0,
+                'resources': 0
+            };
+
+            answers.forEach(a => {
+                totalScore += a.score;
+                dimScores[a.dim] += a.score;
+            });
+
+            // 2. Determine Level
+            let levelTitle = "";
+            let stars = "";
+            let advice = "";
+            let levelClass = ""; // Not used in CSS but good for logic expansion
+
+            if (totalScore >= 90) {
+                levelTitle = "财富潜力优秀";
+                stars = "⭐⭐⭐⭐⭐";
+                advice = "你的财富能量非常充沛！你拥有极佳的财富思维和执行力。现在的你需要专注于'杠杆效应'，学习如何用更少的精力撬动更大的财富，同时保持觉知，防止因过度自信而产生的盲点。";
+            } else if (totalScore >= 60) {
+                levelTitle = "财富潜力良好";
+                stars = "⭐⭐⭐⭐";
+                advice = "你的基础很不错，但在某些维度仍有卡点。可能是有想法不敢行动，或者是行动了但缺乏策略。建议针对雷达图中的短板进行专项提升，打破舒适圈，财富层级将很快跃迁。";
+            } else if (totalScore >= 30) {
+                levelTitle = "财富潜力待激活";
+                stars = "⭐⭐⭐";
+                advice = "你对财富有渴望，但潜意识里可能存在限制性信念（如'赚钱很难'）。这些信念在阻碍你的行动。当务之急是清理内心的匮乏感，建立配得感，从小目标开始积累成功体验。";
+            } else {
+                levelTitle = "财富潜力受限";
+                stars = "⭐⭐";
+                advice = "目前你的财富管道可能处于堵塞状态。这通常源于对金钱的负面认知或缺乏清晰目标。但这正是改变的开始！不要气馁，通过系统的学习和环境的改变，你完全可以重塑你的财富命运。";
+            }
+
+            // 3. Update DOM
+            document.getElementById('total-score').innerText = totalScore;
+            document.getElementById('star-rating').innerText = stars;
+            document.getElementById('level-title').innerText = levelTitle;
+            document.getElementById('advice-text').innerText = advice;
+
+            // Generate Dimension Analysis Text
+            let analysisHtml = "";
+            const scoresArray = [dimScores.belief, dimScores.action, dimScores.manifestation, dimScores.resources];
+            const lowScoreIndex = scoresArray.indexOf(Math.min(...scoresArray));
+            const highScoreIndex = scoresArray.indexOf(Math.max(...scoresArray));
+            
+            const labels = ['金钱信念', '行动执行力', '显化认知', '资源整合'];
+            
+            analysisHtml += `你的优势在于<strong>${labels[highScoreIndex]}</strong>，这是你创造财富的发动机。`;
+            analysisHtml += `<br>你需要提升的是<strong>${labels[lowScoreIndex]}</strong>，这可能是你目前的财富漏斗。`;
+            
+            document.getElementById('dimension-analysis').innerHTML = analysisHtml;
+
+            // 4. Render Chart
+            renderChart(dimScores);
+
+            // 5. Fire Confetti
+            createConfetti();
+        }
+
+        function renderChart(scores) {
+            const ctx = document.getElementById('radarChart').getContext('2d');
+            
+            // Destroy existing chart if any
+            if (chartInstance) {
+                chartInstance.destroy();
+            }
+
+            chartInstance = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: ['金钱信念', '行动力', '显化认知', '资源整合'],
+                    datasets: [{
+                        label: '财富维度得分',
+                        data: [scores.belief, scores.action, scores.manifestation, scores.resources],
+                        backgroundColor: 'rgba(253, 185, 49, 0.4)',
+                        borderColor: '#FFD700',
+                        pointBackgroundColor: '#2E0E48',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: '#FFD700'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            angleLines: { color: 'rgba(0,0,0,0.1)' },
+                            grid: { color: 'rgba(0,0,0,0.1)' },
+                            pointLabels: {
+                                font: { size: 12, family: 'PingFang SC' },
+                                color: '#333'
+                            },
+                            suggestedMin: 0,
+                            suggestedMax: 30,
+                            ticks: { display: false } // Hide numbers on axis for cleaner look
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        }
+
+        function restartQuiz() {
+            currentQuestionIndex = 0;
+            answers = [];
+            showSection('welcome-page');
+        }
+
+        function createConfetti() {
+            const colors = ['#FFD700', '#FDB931', '#5D3E8C', '#ffffff'];
+            for (let i = 0; i < 50; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                confetti.style.left = Math.random() * 100 + 'vw';
+                confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.animationDuration = (Math.random() * 3 + 2) + 's';
+                confetti.style.opacity = Math.random();
+                document.body.appendChild(confetti);
+                
+                // Cleanup
+                setTimeout(() => {
+                    confetti.remove();
+                }, 5000);
+            }
+        }
+    </script>
+</body>
+</html>
